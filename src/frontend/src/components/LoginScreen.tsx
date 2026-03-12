@@ -123,7 +123,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           className="relative z-10 flex flex-col items-center text-center gap-8"
         >
           <img
-            src="/assets/uploads/IMG-20260312-WA0002-2-1.jpg"
+            src="/assets/uploads/Final-Crop-Gif-1-1.gif"
             alt="AMKY & Co"
             className="h-24 w-auto rounded-xl object-contain bg-white/10 p-2 backdrop-blur-sm"
           />
@@ -163,7 +163,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 justify-center">
             <img
-              src="/assets/uploads/IMG-20260312-WA0002-2-1.jpg"
+              src="/assets/uploads/Final-Crop-Gif-1-1.gif"
               alt="AMKY & Co"
               className="h-14 w-auto rounded object-contain border p-1"
               style={{ borderColor: "#e2e8f0" }}
@@ -289,9 +289,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               <KeyRound className="h-4 w-4" />
               Reset Login Credentials
             </Button>
-            <p className="text-xs text-center" style={{ color: "#94a3b8" }}>
-              Default: admin / amky2001
-            </p>
           </div>
         </motion.div>
       </div>

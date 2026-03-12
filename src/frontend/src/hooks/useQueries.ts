@@ -1,20 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Client, ClientId, ClientInput } from "../backend.d.ts";
+import type { Client, ClientId, ClientInput, Reply } from "../backend.d.ts";
 import { useActor } from "./useActor";
 
-export interface Reply {
-  id: string;
-  clientId: string;
-  channel: string;
-  message: string;
-  createdAt: bigint;
-}
-
-interface ActorWithReplies {
-  addReply(clientId: string, channel: string, message: string): Promise<void>;
-  getReplies(clientId: string): Promise<Array<Reply>>;
-  deleteReply(id: string): Promise<void>;
-}
+export type { Reply };
 
 export function useGetAllClients() {
   const { actor, isFetching } = useActor();
@@ -70,7 +58,7 @@ export function useGetReplies(clientId: string) {
     queryKey: ["replies", clientId],
     queryFn: async () => {
       if (!actor) return [];
-      return (actor as unknown as ActorWithReplies).getReplies(clientId);
+      return actor.getReplies(clientId);
     },
     enabled: !!actor && !isFetching && !!clientId,
   });
@@ -86,11 +74,7 @@ export function useAddReply() {
       message: string;
     }) => {
       if (!actor) throw new Error("No actor");
-      return (actor as unknown as ActorWithReplies).addReply(
-        vars.clientId,
-        vars.channel,
-        vars.message,
-      );
+      return actor.addReply(vars.clientId, vars.channel, vars.message);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["replies", variables.clientId] });
@@ -104,7 +88,7 @@ export function useDeleteReply() {
   return useMutation({
     mutationFn: async (vars: { id: string; clientId: string }) => {
       if (!actor) throw new Error("No actor");
-      return (actor as unknown as ActorWithReplies).deleteReply(vars.id);
+      return actor.deleteReply(vars.id);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["replies", variables.clientId] });

@@ -105,12 +105,22 @@ export interface ClientInput {
     notes: string;
     phone: string;
 }
+export interface Reply {
+    id: string;
+    clientId: ClientId;
+    channel: string;
+    message: string;
+    createdAt: Time;
+}
 export interface backendInterface {
     addClient(input: ClientInput): Promise<void>;
     deleteClient(id: ClientId): Promise<void>;
     editClient(id: ClientId, input: ClientInput): Promise<void>;
     getAllClients(): Promise<Array<Client>>;
     getClient(id: ClientId): Promise<Client>;
+    addReply(clientId: ClientId, channel: string, message: string): Promise<void>;
+    getReplies(clientId: ClientId): Promise<Array<Reply>>;
+    deleteReply(id: string): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -181,6 +191,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getClient(arg0);
+            return result;
+        }
+    }
+    async addReply(arg0: ClientId, arg1: string, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addReply(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addReply(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async getReplies(arg0: ClientId): Promise<Array<Reply>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getReplies(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getReplies(arg0);
+            return result;
+        }
+    }
+    async deleteReply(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteReply(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteReply(arg0);
             return result;
         }
     }

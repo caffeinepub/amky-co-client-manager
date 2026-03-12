@@ -42,6 +42,7 @@ import {
 import { ClientFormModal } from "./ClientFormModal";
 import { RepliesSheet } from "./RepliesSheet";
 import { ReplyDialog } from "./ReplyDialog";
+import { SenderDetailsBar } from "./SenderDetailsBar";
 
 const container = {
   hidden: {},
@@ -75,7 +76,19 @@ function ReplyBadge({ clientId }: { clientId: string }) {
   );
 }
 
-export function ClientsTab() {
+interface ClientsTabProps {
+  senderEmail: string;
+  senderPhone: string;
+  onSenderEmailChange: (v: string) => void;
+  onSenderPhoneChange: (v: string) => void;
+}
+
+export function ClientsTab({
+  senderEmail,
+  senderPhone,
+  onSenderEmailChange,
+  onSenderPhoneChange,
+}: ClientsTabProps) {
   const { data: clients, isLoading, refetch } = useGetAllClients();
   const addClient = useAddClient();
   const editClient = useEditClient();
@@ -91,7 +104,6 @@ export function ClientsTab() {
   const [repliesSheetClient, setRepliesSheetClient] = useState<Client | null>(
     null,
   );
-  // force re-render when pics change
   const [picVersion, setPicVersion] = useState(0);
 
   const filtered = (clients ?? []).filter(
@@ -111,7 +123,6 @@ export function ClientsTab() {
         toast.success("Client updated successfully");
       } else {
         await addClient.mutateAsync(input);
-        // After adding, find the new client by name+email
         if (profilePic) {
           const updated = await refetch();
           const newClient = (updated.data ?? []).find(
@@ -147,6 +158,14 @@ export function ClientsTab() {
 
   return (
     <div className="space-y-5">
+      {/* Sender Details Bar */}
+      <SenderDetailsBar
+        email={senderEmail}
+        phone={senderPhone}
+        onEmailChange={onSenderEmailChange}
+        onPhoneChange={onSenderPhoneChange}
+      />
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative w-full sm:w-80">
@@ -246,13 +265,11 @@ export function ClientsTab() {
                   data-ocid={`clients.item.${index + 1}`}
                   className="group relative bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden"
                 >
-                  {/* Gold left accent line */}
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg" />
 
                   <div className="pl-2">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {/* Avatar */}
                         {pic ? (
                           <img
                             src={pic}
@@ -398,6 +415,8 @@ export function ClientsTab() {
           open={!!replyDialogClient}
           onOpenChange={(open) => !open && setReplyDialogClient(null)}
           client={replyDialogClient}
+          defaultEmail={senderEmail}
+          defaultPhone={senderPhone}
         />
       )}
 

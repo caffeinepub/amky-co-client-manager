@@ -24,6 +24,13 @@ export const Client = IDL.Record({
   'notes' : IDL.Text,
   'phone' : IDL.Text,
 });
+export const Reply = IDL.Record({
+  'id' : IDL.Text,
+  'clientId' : ClientId,
+  'channel' : IDL.Text,
+  'message' : IDL.Text,
+  'createdAt' : Time,
+});
 
 export const idlService = IDL.Service({
   'addClient' : IDL.Func([ClientInput], [], []),
@@ -31,6 +38,9 @@ export const idlService = IDL.Service({
   'editClient' : IDL.Func([ClientId, ClientInput], [], []),
   'getAllClients' : IDL.Func([], [IDL.Vec(Client)], ['query']),
   'getClient' : IDL.Func([ClientId], [Client], ['query']),
+  'addReply' : IDL.Func([ClientId, IDL.Text, IDL.Text], [], []),
+  'getReplies' : IDL.Func([ClientId], [IDL.Vec(Reply)], ['query']),
+  'deleteReply' : IDL.Func([IDL.Text], [], []),
 });
 
 export const idlInitArgs = [];
@@ -52,6 +62,13 @@ export const idlFactory = ({ IDL }) => {
     'notes' : IDL.Text,
     'phone' : IDL.Text,
   });
+  const Reply = IDL.Record({
+    'id' : IDL.Text,
+    'clientId' : ClientId,
+    'channel' : IDL.Text,
+    'message' : IDL.Text,
+    'createdAt' : Time,
+  });
   
   return IDL.Service({
     'addClient' : IDL.Func([ClientInput], [], []),
@@ -59,6 +76,9 @@ export const idlFactory = ({ IDL }) => {
     'editClient' : IDL.Func([ClientId, ClientInput], [], []),
     'getAllClients' : IDL.Func([], [IDL.Vec(Client)], ['query']),
     'getClient' : IDL.Func([ClientId], [Client], ['query']),
+    'addReply' : IDL.Func([ClientId, IDL.Text, IDL.Text], [], []),
+    'getReplies' : IDL.Func([ClientId], [IDL.Vec(Reply)], ['query']),
+    'deleteReply' : IDL.Func([IDL.Text], [], []),
   });
 };
 

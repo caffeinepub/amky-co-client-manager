@@ -14,6 +14,8 @@ const queryClient = new QueryClient();
 function AppContent() {
   const [tab, setTab] = useState("clients");
   const [loggedIn, setLoggedIn] = useState(false);
+  const [senderEmail, setSenderEmail] = useState("amkyandco@gmail.com");
+  const [senderPhone, setSenderPhone] = useState("+91 8433526111");
   const year = new Date().getFullYear();
 
   if (!loggedIn) {
@@ -26,10 +28,9 @@ function AppContent() {
       <header className="bg-primary text-primary-foreground shadow-lg">
         <div className="container max-w-5xl mx-auto px-4 py-5">
           <div className="flex items-center justify-between gap-4">
-            {/* AMKY Logo */}
             <div className="flex items-center gap-3">
               <img
-                src="/assets/uploads/IMG-20260312-WA0002-2-1.jpg"
+                src="/assets/uploads/Final-Crop-Gif-1-1.gif"
                 alt="AMKY & Co Logo"
                 className="h-14 w-auto rounded object-contain bg-white p-1"
               />
@@ -53,7 +54,6 @@ function AppContent() {
               <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
-          {/* Gold rule */}
           <div className="mt-4 h-px bg-gradient-to-r from-accent/80 via-accent/30 to-transparent" />
         </div>
       </header>
@@ -90,7 +90,12 @@ function AppContent() {
             </TabsList>
 
             <TabsContent value="clients" className="mt-0">
-              <ClientsTab />
+              <ClientsTab
+                senderEmail={senderEmail}
+                senderPhone={senderPhone}
+                onSenderEmailChange={setSenderEmail}
+                onSenderPhoneChange={setSenderPhone}
+              />
             </TabsContent>
             <TabsContent value="broadcast" className="mt-0">
               <MessageAllTab />

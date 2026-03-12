@@ -7,6 +7,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -17,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Archive,
   CheckCheck,
+  ChevronDown,
+  ChevronUp,
   ChevronsUpDown,
   Copy,
   FileSpreadsheet,
@@ -26,14 +29,16 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
+  Plus,
   Trash2,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Client } from "../backend.d.ts";
 import { useGetAllClients, useGetReplies } from "../hooks/useQueries";
+import { RepliesSheet } from "./RepliesSheet";
 import { ReplyDialog } from "./ReplyDialog";
 
 type AttachedFile = {
@@ -74,25 +79,150 @@ Shop No 28, Palika Bazar, Ghodbunder Rd, Kapurbawdi, Thane West - 400607`;
 
 function ClientReplyBadge({
   clientId,
+  onViewReplies,
   onLogReply,
-}: { clientId: string; onLogReply: () => void }) {
+}: {
+  clientId: string;
+  onViewReplies: () => void;
+  onLogReply: () => void;
+}) {
   const { data: replies = [] } = useGetReplies(clientId);
   return (
-    <button
-      type="button"
-      data-ocid="compose.toggle"
-      onClick={onLogReply}
-      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded px-2 py-1 hover:bg-muted"
-    >
-      <MessageSquare className="h-3.5 w-3.5" />
-      {replies.length > 0 ? (
-        <span className="text-green-600 font-medium">
-          {replies.length} {replies.length === 1 ? "reply" : "replies"}
-        </span>
-      ) : (
-        "Log reply from client"
-      )}
-    </button>
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        data-ocid="compose.toggle"
+        onClick={onViewReplies}
+        className="flex items-center gap-1.5 text-xs transition-colors rounded px-2 py-1 hover:bg-muted"
+      >
+        <MessageSquare className="h-3.5 w-3.5" />
+        {replies.length > 0 ? (
+          <span className="text-green-600 font-semibold">
+            {replies.length} {replies.length === 1 ? "reply" : "replies"} — View
+          </span>
+        ) : (
+          <span className="text-muted-foreground">No replies yet</span>
+        )}
+      </button>
+      <button
+        type="button"
+        data-ocid="compose.secondary_button"
+        onClick={onLogReply}
+        title="Log a reply from this client"
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors rounded px-2 py-1 hover:bg-primary/10 border border-primary/30"
+      >
+        <Plus className="h-3 w-3" />
+        Log Reply
+      </button>
+    </div>
+  );
+}
+
+function SenderDetailsBar({
+  senderEmail,
+  setSenderEmail,
+  senderPhone,
+  setSenderPhone,
+}: {
+  senderEmail: string;
+  setSenderEmail: (v: string) => void;
+  senderPhone: string;
+  setSenderPhone: (v: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        data-ocid="compose.toggle"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">
+            Sender Details
+          </span>
+          <span className="text-xs text-muted-foreground">
+            (optional override)
+          </span>
+        </div>
+        {expanded ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="sender-details"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="sender-email"
+                  className="text-xs font-semibold text-foreground/80"
+                >
+                  Sender Email
+                </Label>
+                <Input
+                  id="sender-email"
+                  data-ocid="compose.input"
+                  type="email"
+                  placeholder="amkyandco@gmail.com"
+                  value={senderEmail}
+                  onChange={(e) => setSenderEmail(e.target.value)}
+                  className="h-9 text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Overrides default sender email in Gmail compose URL.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="sender-phone"
+                  className="text-xs font-semibold text-foreground/80"
+                >
+                  Sender WhatsApp Number
+                </Label>
+                <div className="flex">
+                  <div className="flex items-center px-3 bg-muted border border-r-0 border-border rounded-l-md">
+                    <span className="text-sm font-medium text-foreground">
+                      +91
+                    </span>
+                  </div>
+                  <Input
+                    id="sender-phone"
+                    data-ocid="compose.input"
+                    type="tel"
+                    placeholder="10-digit number"
+                    value={senderPhone}
+                    onChange={(e) =>
+                      setSenderPhone(
+                        e.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                    className="h-9 text-sm rounded-l-none"
+                    maxLength={10}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Used as the sender reference in the message signature.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -105,23 +235,16 @@ export function ComposeTab() {
   const [files, setFiles] = useState<AttachedFile[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [repliesSheetOpen, setRepliesSheetOpen] = useState(false);
+  const [senderEmail, setSenderEmail] = useState("");
+  const [senderPhone, setSenderPhone] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedClient: Client | undefined = clients.find(
     (c) => c.id === selectedId,
   );
 
-  useEffect(() => {
-    if (selectedClient) {
-      setMessage(
-        `Dear ${selectedClient.name},\n\n\n\nWarm regards,\nCA Aman Yadav\nAMKY & Co | Chartered Accountants`,
-      );
-    } else {
-      setMessage("");
-    }
-    setFiles([]);
-  }, [selectedClient]);
-
+  const effectiveSenderEmail = senderEmail.trim() || "amkyandco@gmail.com";
   const fullMessage = message + SIGNATURE_TEXT;
 
   const copyMessage = async () => {
@@ -175,7 +298,6 @@ export function ComposeTab() {
       return;
     }
     const phone = selectedClient.phone.replace(/\D/g, "");
-    // Handle numbers that already have country code
     const withCountry =
       phone.startsWith("91") && phone.length === 12 ? phone : `91${phone}`;
     const url = `https://wa.me/${withCountry}?text=${encodeURIComponent(fullMessage)}`;
@@ -188,7 +310,7 @@ export function ComposeTab() {
       return;
     }
     const subject = "Message from AMKY & Co";
-    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(selectedClient.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullMessage)}`;
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&from=${encodeURIComponent(effectiveSenderEmail)}&to=${encodeURIComponent(selectedClient.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullMessage)}`;
     window.open(url, "_blank");
   };
 
@@ -214,6 +336,14 @@ export function ComposeTab() {
           in Gmail.
         </p>
       </div>
+
+      {/* Sender Details Bar */}
+      <SenderDetailsBar
+        senderEmail={senderEmail}
+        setSenderEmail={setSenderEmail}
+        senderPhone={senderPhone}
+        setSenderPhone={setSenderPhone}
+      />
 
       {/* Searchable client selector */}
       <div className="space-y-2">
@@ -252,6 +382,8 @@ export function ComposeTab() {
                       value={`${c.name} ${c.email}`}
                       onSelect={() => {
                         setSelectedId(c.id);
+                        setMessage("");
+                        setFiles([]);
                         setSelectorOpen(false);
                       }}
                       className="cursor-pointer"
@@ -303,6 +435,7 @@ export function ComposeTab() {
           </Button>
           <ClientReplyBadge
             clientId={selectedClient.id}
+            onViewReplies={() => setRepliesSheetOpen(true)}
             onLogReply={() => setReplyDialogOpen(true)}
           />
         </motion.div>
@@ -330,7 +463,7 @@ export function ComposeTab() {
         {/* Signature preview */}
         <div className="rounded-lg border border-border bg-secondary/30 px-4 py-3 flex items-center gap-4">
           <img
-            src="/assets/uploads/IMG-20260312-WA0002-2-1.jpg"
+            src="/assets/uploads/Final-Crop-Gif-1-1.gif"
             alt="AMKY & Co"
             className="h-12 w-auto rounded object-contain bg-white p-0.5 border border-border shrink-0"
           />
@@ -339,7 +472,7 @@ export function ComposeTab() {
             <p className="font-semibold text-foreground/80">
               AMKY &amp; Co | Chartered Accountants
             </p>
-            <p>amkyandco@gmail.com</p>
+            <p>{effectiveSenderEmail}</p>
             <p>+91 8433526111 &nbsp;&bull;&nbsp; +91 9372627583</p>
             <p>Shop No 28, Palika Bazar, Kapurbawdi, Thane West - 400607</p>
           </div>
@@ -476,11 +609,20 @@ export function ComposeTab() {
         )}
       </div>
 
-      {/* Reply Dialog */}
+      {/* Reply Dialog (Log) */}
       {selectedClient && (
         <ReplyDialog
           open={replyDialogOpen}
           onOpenChange={setReplyDialogOpen}
+          client={selectedClient}
+        />
+      )}
+
+      {/* Replies Sheet (View) */}
+      {selectedClient && (
+        <RepliesSheet
+          open={repliesSheetOpen}
+          onOpenChange={setRepliesSheetOpen}
           client={selectedClient}
         />
       )}

@@ -26,12 +26,22 @@ export interface ClientInput {
   'phone' : string,
 }
 export type Time = bigint;
+export interface Reply {
+  'id' : string,
+  'clientId' : ClientId,
+  'channel' : string,
+  'message' : string,
+  'createdAt' : Time,
+}
 export interface _SERVICE {
   'addClient' : ActorMethod<[ClientInput], undefined>,
   'deleteClient' : ActorMethod<[ClientId], undefined>,
   'editClient' : ActorMethod<[ClientId, ClientInput], undefined>,
   'getAllClients' : ActorMethod<[], Array<Client>>,
   'getClient' : ActorMethod<[ClientId], Client>,
+  'addReply' : ActorMethod<[ClientId, string, string], undefined>,
+  'getReplies' : ActorMethod<[ClientId], Array<Reply>>,
+  'deleteReply' : ActorMethod<[string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

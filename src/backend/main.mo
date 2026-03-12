@@ -40,11 +40,11 @@ actor {
     };
   };
 
-  let clients = Map.empty<ClientId, Client>();
-  var currentId = 0;
+  stable var clients = Map.empty<ClientId, Client>();
+  stable var currentId = 0;
 
-  let replies = Map.empty<Text, Reply>();
-  var replyId = 0;
+  stable var replies = Map.empty<Text, Reply>();
+  stable var replyId = 0;
 
   func generateId() : ClientId {
     currentId += 1;
