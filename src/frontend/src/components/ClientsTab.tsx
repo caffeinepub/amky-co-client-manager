@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Mail,
+  MessageSquare,
   Pencil,
   Phone,
   Plus,
@@ -31,8 +32,16 @@ import {
   useDeleteClient,
   useEditClient,
   useGetAllClients,
+  useGetReplies,
 } from "../hooks/useQueries";
+import {
+  getProfilePic,
+  removeProfilePic,
+  setProfilePic,
+} from "../utils/profilePictures";
 import { ClientFormModal } from "./ClientFormModal";
+import { RepliesSheet } from "./RepliesSheet";
+import { ReplyDialog } from "./ReplyDialog";
 
 const container = {
   hidden: {},
@@ -43,8 +52,31 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2)
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function ReplyBadge({ clientId }: { clientId: string }) {
+  const { data: replies = [] } = useGetReplies(clientId);
+  if (replies.length === 0) {
+    return <span className="text-xs text-muted-foreground">No replies</span>;
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className="bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 text-xs border-green-200 dark:border-green-800"
+    >
+      <MessageSquare className="h-3 w-3 mr-1" />
+      {replies.length} {replies.length === 1 ? "reply" : "replies"}
+    </Badge>
+  );
+}
+
 export function ClientsTab() {
-  const { data: clients, isLoading } = useGetAllClients();
+  const { data: clients, isLoading, refetch } = useGetAllClients();
   const addClient = useAddClient();
   const editClient = useEditClient();
   const deleteClient = useDeleteClient();
@@ -53,6 +85,14 @@ export function ClientsTab() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [replyDialogClient, setReplyDialogClient] = useState<Client | null>(
+    null,
+  );
+  const [repliesSheetClient, setRepliesSheetClient] = useState<Client | null>(
+    null,
+  );
+  // force re-render when pics change
+  const [picVersion, setPicVersion] = useState(0);
 
   const filtered = (clients ?? []).filter(
     (c) =>
@@ -60,13 +100,28 @@ export function ClientsTab() {
       c.email.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleSave = async (input: ClientInput) => {
+  const handleSave = async (input: ClientInput, profilePic?: string) => {
     try {
       if (editingClient) {
         await editClient.mutateAsync({ id: editingClient.id, input });
+        if (profilePic !== undefined) {
+          setProfilePic(editingClient.id, profilePic);
+          setPicVersion((v) => v + 1);
+        }
         toast.success("Client updated successfully");
       } else {
         await addClient.mutateAsync(input);
+        // After adding, find the new client by name+email
+        if (profilePic) {
+          const updated = await refetch();
+          const newClient = (updated.data ?? []).find(
+            (c) => c.name === input.name && c.email === input.email,
+          );
+          if (newClient) {
+            setProfilePic(newClient.id, profilePic);
+            setPicVersion((v) => v + 1);
+          }
+        }
         toast.success("Client added successfully");
       }
       setModalOpen(false);
@@ -78,6 +133,7 @@ export function ClientsTab() {
   const handleDelete = async () => {
     if (!deletingId) return;
     try {
+      removeProfilePic(deletingId);
       await deleteClient.mutateAsync(deletingId);
       toast.success("Client removed");
     } catch {
@@ -175,77 +231,124 @@ export function ClientsTab() {
           initial="hidden"
           animate="show"
           className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          key={picVersion}
         >
           <AnimatePresence>
-            {filtered.map((client, index) => (
-              <motion.div
-                key={client.id}
-                variants={item}
-                layout
-                exit={{ opacity: 0, scale: 0.95 }}
-                data-ocid={`clients.item.${index + 1}`}
-                className="group relative bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden"
-              >
-                {/* Gold left accent line */}
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg" />
+            {filtered.map((client, index) => {
+              const pic = getProfilePic(client.id);
+              const initials = getInitials(client.name);
+              return (
+                <motion.div
+                  key={client.id}
+                  variants={item}
+                  layout
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  data-ocid={`clients.item.${index + 1}`}
+                  className="group relative bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden"
+                >
+                  {/* Gold left accent line */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg" />
 
-                <div className="pl-2">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="min-w-0">
-                      <h3 className="font-display font-semibold text-base text-foreground truncate">
-                        {client.name}
-                      </h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-sm text-muted-foreground truncate">
-                          {client.email}
-                        </span>
+                  <div className="pl-2">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Avatar */}
+                        {pic ? (
+                          <img
+                            src={pic}
+                            alt={client.name}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-accent shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-navy-light flex items-center justify-center shrink-0 border-2 border-accent/40">
+                            <span className="text-xs font-bold text-primary-foreground">
+                              {initials}
+                            </span>
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h3 className="font-display font-semibold text-base text-foreground truncate">
+                            {client.name}
+                          </h3>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-sm text-muted-foreground truncate">
+                              {client.email}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          data-ocid={`clients.edit_button.${index + 1}`}
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => {
+                            setEditingClient(client);
+                            setModalOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          data-ocid={`clients.delete_button.${index + 1}`}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeletingId(client.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        data-ocid={`clients.edit_button.${index + 1}`}
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => {
-                          setEditingClient(client);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        data-ocid={`clients.delete_button.${index + 1}`}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeletingId(client.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+
+                    {client.phone && (
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm text-muted-foreground">
+                          {client.phone}
+                        </span>
+                      </div>
+                    )}
+                    {client.notes && (
+                      <div className="flex items-start gap-1.5 mt-2 pt-2 border-t border-border">
+                        <StickyNote className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {client.notes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Reply indicators and actions */}
+                    <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border">
+                      <ReplyBadge clientId={client.id} />
+                      <div className="flex gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`clients.secondary_button.${index + 1}`}
+                          className="h-7 text-xs px-2.5 gap-1"
+                          onClick={() => setReplyDialogClient(client)}
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                          Log Reply
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          data-ocid={`clients.button.${index + 1}`}
+                          className="h-7 text-xs px-2.5 gap-1 text-primary hover:text-primary"
+                          onClick={() => setRepliesSheetClient(client)}
+                        >
+                          View
+                        </Button>
+                      </div>
                     </div>
                   </div>
-
-                  {client.phone && (
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-sm text-muted-foreground">
-                        {client.phone}
-                      </span>
-                    </div>
-                  )}
-                  {client.notes && (
-                    <div className="flex items-start gap-1.5 mt-2 pt-2 border-t border-border">
-                      <StickyNote className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {client.notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </motion.div>
       )}
@@ -288,6 +391,24 @@ export function ClientsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reply Dialog */}
+      {replyDialogClient && (
+        <ReplyDialog
+          open={!!replyDialogClient}
+          onOpenChange={(open) => !open && setReplyDialogClient(null)}
+          client={replyDialogClient}
+        />
+      )}
+
+      {/* Replies Sheet */}
+      {repliesSheetClient && (
+        <RepliesSheet
+          open={!!repliesSheetClient}
+          onOpenChange={(open) => !open && setRepliesSheetClient(null)}
+          client={repliesSheetClient}
+        />
+      )}
     </div>
   );
 }

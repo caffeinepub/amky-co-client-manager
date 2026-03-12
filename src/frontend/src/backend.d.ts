@@ -23,10 +23,20 @@ export interface ClientInput {
     notes: string;
     phone: string;
 }
+export interface Reply {
+    id: string;
+    clientId: ClientId;
+    channel: string;
+    message: string;
+    createdAt: Time;
+}
 export interface backendInterface {
     addClient(input: ClientInput): Promise<void>;
     deleteClient(id: ClientId): Promise<void>;
     editClient(id: ClientId, input: ClientInput): Promise<void>;
     getAllClients(): Promise<Array<Client>>;
     getClient(id: ClientId): Promise<Client>;
+    addReply(clientId: ClientId, channel: string, message: string): Promise<void>;
+    getReplies(clientId: ClientId): Promise<Array<Reply>>;
+    deleteReply(id: string): Promise<void>;
 }

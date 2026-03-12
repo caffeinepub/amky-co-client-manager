@@ -9,19 +9,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Camera, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Client, ClientInput } from "../backend.d.ts";
+import { getProfilePic } from "../utils/profilePictures";
 
 interface ClientFormModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSave: (input: ClientInput) => void;
+  onSave: (input: ClientInput, profilePic?: string) => void;
   isSaving: boolean;
   editingClient?: Client | null;
 }
 
 const empty: ClientInput = { name: "", email: "", phone: "", notes: "" };
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2)
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
 
 export function ClientFormModal({
   open,
@@ -32,6 +40,8 @@ export function ClientFormModal({
 }: ClientFormModalProps) {
   const [form, setForm] = useState<ClientInput>(empty);
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [pendingPic, setPendingPic] = useState<string | null>(null);
+  const picInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -46,6 +56,12 @@ export function ClientFormModal({
           : empty,
       );
       setErrors({});
+      // Load existing pic for edit mode
+      if (editingClient) {
+        setPendingPic(getProfilePic(editingClient.id));
+      } else {
+        setPendingPic(null);
+      }
     }
   }, [open, editingClient]);
 
@@ -62,8 +78,22 @@ export function ClientFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave(form);
+    onSave(form, pendingPic ?? undefined);
   };
+
+  const handlePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setPendingPic(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const displayPic = pendingPic;
+  const initials = getInitials(form.name || "?");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,6 +104,41 @@ export function ClientFormModal({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Avatar upload */}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              data-ocid="client_form.upload_button"
+              onClick={() => picInputRef.current?.click()}
+              className="relative group w-16 h-16 rounded-full overflow-hidden border-2 border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              title="Upload profile picture"
+            >
+              {displayPic ? (
+                <img
+                  src={displayPic}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary to-navy-light flex items-center justify-center">
+                  <span className="text-lg font-bold text-primary-foreground">
+                    {initials}
+                  </span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="h-5 w-5 text-white" />
+              </div>
+            </button>
+            <input
+              ref={picInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePicChange}
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="cf-name" className="text-sm font-medium">
               Name <span className="text-destructive">*</span>

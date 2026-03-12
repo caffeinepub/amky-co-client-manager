@@ -1,12 +1,10 @@
 import Time "mo:core/Time";
-import Array "mo:core/Array";
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
 
 actor {
-  // 1. Custom Types
   type ClientId = Text;
 
   type Client = {
@@ -25,7 +23,14 @@ actor {
     notes : Text;
   };
 
-  // 2. Client Compare
+  type Reply = {
+    id : Text;
+    clientId : ClientId;
+    channel : Text;
+    message : Text;
+    createdAt : Time.Time;
+  };
+
   module Client {
     public func compare(client1 : Client, client2 : Client) : Order.Order {
       switch (Text.compare(client1.name, client2.name)) {
@@ -35,18 +40,22 @@ actor {
     };
   };
 
-  // 3. Persistent Data Structure
   let clients = Map.empty<ClientId, Client>();
-
   var currentId = 0;
 
-  // 4. Create Unique Client ID
+  let replies = Map.empty<Text, Reply>();
+  var replyId = 0;
+
   func generateId() : ClientId {
     currentId += 1;
     "C" # currentId.toText();
   };
 
-  // 5. Public Functions
+  func generateReplyId() : Text {
+    replyId += 1;
+    "R" # replyId.toText();
+  };
+
   public shared ({ caller }) func addClient(input : ClientInput) : async () {
     let id = generateId();
     let client : Client = {
@@ -93,5 +102,35 @@ actor {
 
   public query ({ caller }) func getAllClients() : async [Client] {
     clients.values().toArray().sort();
+  };
+
+  public shared ({ caller }) func addReply(clientId : ClientId, channel : Text, message : Text) : async () {
+    if (not clients.containsKey(clientId)) {
+      Runtime.trap("Client not found");
+    };
+    let id = generateReplyId();
+    let reply : Reply = {
+      id;
+      clientId;
+      channel;
+      message;
+      createdAt = Time.now();
+    };
+    replies.add(id, reply);
+  };
+
+  public query ({ caller }) func getReplies(clientId : ClientId) : async [Reply] {
+    let filtered = replies.values().toArray().filter(func(r : Reply) : Bool {
+      r.clientId == clientId
+    });
+    filtered.sort(func(a : Reply, b : Reply) : Order.Order {
+      if (a.createdAt < b.createdAt) #less
+      else if (a.createdAt > b.createdAt) #greater
+      else #equal
+    });
+  };
+
+  public shared ({ caller }) func deleteReply(id : Text) : async () {
+    replies.remove(id);
   };
 };

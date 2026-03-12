@@ -1,17 +1,24 @@
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MapPin, PenLine, Send, Users } from "lucide-react";
+import { LogOut, MapPin, PenLine, Send, Users } from "lucide-react";
 import { useState } from "react";
 import { ClientsTab } from "./components/ClientsTab";
 import { ComposeTab } from "./components/ComposeTab";
+import { LoginScreen } from "./components/LoginScreen";
 import { MessageAllTab } from "./components/MessageAllTab";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const [tab, setTab] = useState("clients");
+  const [loggedIn, setLoggedIn] = useState(false);
   const year = new Date().getFullYear();
+
+  if (!loggedIn) {
+    return <LoginScreen onLogin={() => setLoggedIn(true)} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -22,7 +29,7 @@ function AppContent() {
             {/* AMKY Logo */}
             <div className="flex items-center gap-3">
               <img
-                src="/assets/uploads/IMG-20260312-WA0001-2.jpg"
+                src="/assets/uploads/IMG-20260312-WA0002-2-1.jpg"
                 alt="AMKY & Co Logo"
                 className="h-14 w-auto rounded object-contain bg-white p-1"
               />
@@ -35,12 +42,16 @@ function AppContent() {
                 </p>
               </div>
             </div>
-            {/* CA India Logo */}
-            <img
-              src="/assets/uploads/IMG-20260312-WA0000-1.jpg"
-              alt="CA India Logo"
-              className="h-14 w-auto rounded object-contain bg-white p-1 hidden sm:block"
-            />
+            <Button
+              size="sm"
+              variant="ghost"
+              data-ocid="header.button"
+              onClick={() => setLoggedIn(false)}
+              className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10 gap-1.5"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           </div>
           {/* Gold rule */}
           <div className="mt-4 h-px bg-gradient-to-r from-accent/80 via-accent/30 to-transparent" />

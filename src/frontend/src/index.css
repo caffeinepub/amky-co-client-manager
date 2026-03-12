@@ -20,7 +20,6 @@
 
 @layer base {
   :root {
-    /* Warm cream background — lifted from logo parchment tones */
     --background: 0.98 0.004 80;
     --foreground: 0.15 0.04 258;
 
@@ -30,18 +29,15 @@
     --popover: 0.995 0.002 80;
     --popover-foreground: 0.15 0.04 258;
 
-    /* Deep royal navy — ICAI logo blue */
     --primary: 0.25 0.12 258;
     --primary-foreground: 0.98 0.004 80;
 
-    /* Warm off-white secondary */
     --secondary: 0.93 0.012 78;
     --secondary-foreground: 0.25 0.12 258;
 
     --muted: 0.94 0.01 78;
     --muted-foreground: 0.48 0.05 258;
 
-    /* Warm amber-gold — ICAI logo emblem gold */
     --accent: 0.7 0.17 72;
     --accent-foreground: 0.12 0.04 258;
 
@@ -60,7 +56,6 @@
     --chart-4: 0.65 0.12 45;
     --chart-5: 0.6 0.18 310;
 
-    /* Sidebar — navy matching primary */
     --sidebar: 0.25 0.12 258;
     --sidebar-foreground: 0.92 0.008 80;
     --sidebar-primary: 0.7 0.17 72;
@@ -78,17 +73,39 @@
   }
   body {
     @apply bg-background text-foreground font-body;
+    min-height: 100vh;
+    /* Layered professional texture: fine diagonal lines + radial glows */
+    background-color: oklch(0.98 0.004 80);
+    /* Soft radial glows */
     background-image: radial-gradient(
-        ellipse at 20% 50%,
-        oklch(0.25 0.12 258 / 0.05) 0%,
-        transparent 60%
+        ellipse at 15% 40%,
+        oklch(0.25 0.12 258 / 0.055) 0%,
+        transparent 55%
       ),
       radial-gradient(
-        ellipse at 80% 20%,
+        ellipse at 85% 15%,
         oklch(0.7 0.17 72 / 0.07) 0%,
         transparent 50%
+      ),
+      radial-gradient(
+        ellipse at 60% 85%,
+        oklch(0.25 0.12 258 / 0.04) 0%,
+        transparent 45%
+      ), /* Fine diagonal crosshatch texture */
+      repeating-linear-gradient(
+        45deg,
+        oklch(0.25 0.12 258 / 0.018) 0px,
+        oklch(0.25 0.12 258 / 0.018) 1px,
+        transparent 1px,
+        transparent 18px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        oklch(0.25 0.12 258 / 0.012) 0px,
+        oklch(0.25 0.12 258 / 0.012) 1px,
+        transparent 1px,
+        transparent 18px
       );
-    min-height: 100vh;
   }
   h1,
   h2,
